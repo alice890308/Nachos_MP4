@@ -53,7 +53,7 @@ void ExceptionHandler(ExceptionType which)
 	int type = kernel->machine->ReadRegister(2);
 	int val;
 	int status, exit, threadID, programID;
-	int numChar, fileID;
+	int numChar, fileID, size;
 	DEBUG(dbgSys, "Received Exception " << which << " type: " << type << "\n");
 	switch (which)
 	{
@@ -63,7 +63,6 @@ void ExceptionHandler(ExceptionType which)
 		case SC_Close:
 			val = kernel->machine->ReadRegister(4);
 			{
-				//cout << filename << endl;
 				status = SysClose(val);
 
 				kernel->machine->WriteRegister(2, (int)status);
@@ -80,8 +79,6 @@ void ExceptionHandler(ExceptionType which)
 			fileID = kernel->machine->ReadRegister(6);
 			{
 				char *buffer = &(kernel->machine->mainMemory[val]);
-
-				//cout << filename << endl;
 				int status = SysRead(buffer, numChar, fileID);
 
 				kernel->machine->WriteRegister(2, (int)status);
@@ -98,8 +95,6 @@ void ExceptionHandler(ExceptionType which)
 			fileID = kernel->machine->ReadRegister(6);
 			{
 				char *buffer = &(kernel->machine->mainMemory[val]);
-
-				//cout << "exception handler sc write id = "<< id << '\n';
 				int status = SysWrite(buffer, numChar, fileID);
 
 				kernel->machine->WriteRegister(2, (int)status);
@@ -115,7 +110,6 @@ void ExceptionHandler(ExceptionType which)
 			val = kernel->machine->ReadRegister(4);
 			{
 				char *filename = &(kernel->machine->mainMemory[val]);
-				//cout << filename << endl;
 				status = SysOpen(filename);
 
 				kernel->machine->WriteRegister(2, (int)status);
@@ -128,7 +122,7 @@ void ExceptionHandler(ExceptionType which)
 			break;
 		case SC_Create:
 			val = kernel->machine->ReadRegister(4);
-			int size = kernel->machine->ReadRegister(5);
+			size = kernel->machine->ReadRegister(5);
 			{
 				char *filename = &(kernel->machine->mainMemory[val]);
 				//cout << filename << endl;
@@ -157,7 +151,7 @@ void ExceptionHandler(ExceptionType which)
 			SysHalt();
 			ASSERTNOTREACHED();
 			break;
-		// MP4 mod tag
+			// MP4 mod tag
 #ifdef FILESYS_STUB
 		case SC_Create:
 			val = kernel->machine->ReadRegister(4);
@@ -179,7 +173,7 @@ void ExceptionHandler(ExceptionType which)
 			/* Process SysAdd Systemcall*/
 			int result;
 			result = SysAdd(/* int op1 */ (int)kernel->machine->ReadRegister(4),
-							/* int op2 */ (int)kernel->machine->ReadRegister(5));
+											/* int op2 */ (int)kernel->machine->ReadRegister(5));
 			DEBUG(dbgSys, "Add returning with " << result << "\n");
 			/* Prepare Result */
 			kernel->machine->WriteRegister(2, (int)result);

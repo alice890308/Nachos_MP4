@@ -38,32 +38,37 @@ int SysCreate(char *filename)
 //以下是MP1的東西
 int SysCreate(char *filename, int size)
 {
-	// return value
-	// 1: success
-	// 0: failed
+	// return 1: success 0: failed
 	return kernel->fileSystem->Create(filename, size);
 }
-
-//When you finish the function "OpenAFile", you can remove the comment below.
-
 OpenFileId SysOpen(char *name)
 {
-  return kernel->fileSystem->OpenAFile(name);
+	if (kernel->fileSystem->Open(name) != NULL)
+	{
+		return 1; // successfully open
+	}
+	else
+	{
+		return 0; // fail
+	}
+	//因為我們一次只會開一個file，並且會用FileSystem中的curFile這個指標記住，因此fileID沒有實際用處，就回傳0, 1表示有無成功即可
 }
 
 int SysWrite(char *buffer, int size, OpenFileId fileID)
 {
-  return kernel->fileSystem->WriteFile(buffer, size, fileID);
+	return kernel->fileSystem->curFile->Write(buffer, size);
 }
 
 int SysRead(char *buffer, int size, OpenFileId fileID)
 {
-  return kernel->fileSystem->ReadFile(buffer, size, fileID);
+	return kernel->fileSystem->curFile->Read(buffer, size);
 }
 
 int SysClose(OpenFileId id)
 {
-  return kernel->fileSystem->CloseFile(id);
+	delete kernel->fileSystem->curFile;
+	kernel->fileSystem->curFile = NULL;
+	return 1;
 }
 
 #endif /* ! __USERPROG_KSYSCALL_H__ */
