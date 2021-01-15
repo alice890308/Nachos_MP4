@@ -214,7 +214,7 @@ int FileSystem::Create(char *name, int initialSize)
             success = 0; // no free block for file header
         }
             
-        else if (!directory->Add(name, sector)) {
+        else if (!directory->Add(name, sector, false)) {
             success = 0; // no space in directory
         }
             
@@ -239,6 +239,50 @@ int FileSystem::Create(char *name, int initialSize)
     }
     delete directory;
     return success;
+}
+
+void FileSystem::CreateDirectory(char *name)
+{
+    Directory *directory;
+    PersistentBitmap *freeMap;
+    OpenFile *dirFile;
+    FileHeader *newDirHdr = new FileHeader;
+    int sector;
+    char *dirname;
+
+    directory = new Directory(NumDirEntries);
+    directory->FetchFrom(directoryFile);
+
+    dirname = strtok(name, "/");
+    while(dirname != NULL) {
+        sector = directory->Find(dirname);
+        if (sector != -1) { // 這層dir存在，要繼續往下走
+            dirFile = new OpenFile(sector);
+            directory->FetchFrom(dirFile);
+        }
+        else { // 這層dir不存在，所以就是要create的dir
+            break;
+        }
+        dirname = strtok(NULL, "/");
+    }
+    freeMap = new PersistentBitmap(freeMapFile, NumSectors);
+    sector = freeMap->FindAndSet(); // find a sector to hold the dir header
+    ASSERT(sector >= 0);
+    ASSERT(directory->Add(dirname, sector, true)); // 把新的dir加到現在的directory底下
+    ASSERT(newDirHdr->Allocate(freeMap, DirectoryFileSize)); //幫新的dir（data的部分) allocate空間
+    newDirHdr->WriteBack(sector); // 把新的sub dir header寫回disk
+    OpenFile *newDirFile = new OpenFile(sector); // 打開新的sub dir的檔案
+    Directory *newDir = new Directory(NumDirEntries); //爲sub dir創建新的directory structure
+    newDir->WriteBack(newDirFile); // 把這個新的directory structure寫進sub dir的檔案中
+    directory->WriteBack(dirFile); // 更新舊的（上一層）dir的結構
+    freeMap->WriteBack(freeMapFile); // 更新free map
+
+    //把過程中產生的變數刪掉
+    delete newDirHdr;
+    delete newDirFile;
+    delete newDir;
+    delete freeMap;
+    delete directory;
 }
 
 //----------------------------------------------------------------------

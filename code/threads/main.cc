@@ -155,6 +155,7 @@ void Print(char *name)
 static void CreateDirectory(char *name)
 {
     // MP4 Assignment
+    kernel->fileSystem->CreateDirectory(name);
 }
 
 //----------------------------------------------------------------------

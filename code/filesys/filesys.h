@@ -36,6 +36,7 @@
 #include "copyright.h"
 #include "sysdep.h"
 #include "openfile.h"
+#include "string.h"
 
 typedef int OpenFileId;
 
@@ -90,6 +91,8 @@ public:
 
 	int Create(char *name, int initialSize);
 	// Create a file (UNIX creat)
+
+	void CreateDirectory(char *name);
 
 	OpenFile *Open(char *name); // Open a file (UNIX open)
 

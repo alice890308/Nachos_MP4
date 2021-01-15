@@ -127,7 +127,7 @@ int Directory::Find(char *name)
 //	"newSector" -- the disk sector containing the added file's header
 //----------------------------------------------------------------------
 
-bool Directory::Add(char *name, int newSector)
+bool Directory::Add(char *name, int newSector, bool isDir)
 {
     if (FindIndex(name) != -1)
         return FALSE;
@@ -136,6 +136,7 @@ bool Directory::Add(char *name, int newSector)
         if (!table[i].inUse)
         {
             table[i].inUse = TRUE;
+            table[i].isDir = isDir;
             strncpy(table[i].name, name, FileNameMaxLen);
             table[i].sector = newSector;
             return TRUE;
