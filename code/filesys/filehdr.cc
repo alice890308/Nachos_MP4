@@ -74,17 +74,93 @@ bool FileHeader::Allocate(PersistentBitmap *freeMap, int fileSize)
 	if (freeMap->NumClear() < numSectors)
 		return FALSE; // not enough space
 
-	if (fileSize >= MaxFileSize2)
-	{
-	}
-	else if (fileSize >= MaxFileSize1)
-	{
-	}
-	else if (fileSize >= MaxFileSize)
+	if (fileSize > MaxFileSize2)
 	{
 		for (int i = 0; fileSize > 0; i++)
 		{
+			// 找到一個 sector 當作 header
 			dataSectors[i] = freeMap->FindAndSet();
+			ASSERT(dataSectors[i] >= 0);
+
+			// 把這個 sector 當作 header
+			FileHeader *subHeader = new FileHeader;
+
+			// 檢查這個 filesize 還有多少
+			if (fileSize > MaxFileSize2)
+			{
+				// 如果 fileSize 還大於 MaxFileSize 代表要繼續做遞迴
+				subHeader->Allocate(freeMap, MaxFileSize2);
+				fileSize -= MaxFileSize2;
+			}
+			else
+			{
+				// 代表剩下的 file 不會超過一個 fileHeader 可以容納的 sector
+				subHeader->Allocate(freeMap, fileSize);
+				fileSize -= fileSize;
+			}
+			// 紀錄這個 header 紀錄了幾個 sector 
+			numSectors = i;
+			subHeader->WriteBack(dataSectors[i]);
+			delete subHeader;
+		}
+	}
+	else if (fileSize > MaxFileSize1)
+	{
+		for (int i = 0; fileSize > 0; i++)
+		{
+			// 找到一個 sector 當作 header
+			dataSectors[i] = freeMap->FindAndSet();
+			ASSERT(dataSectors[i] >= 0);
+
+			// 把這個 sector 當作 header
+			FileHeader *subHeader = new FileHeader;
+
+			// 檢查這個 filesize 還有多少
+			if (fileSize > MaxFileSize1)
+			{
+				// 如果 fileSize 還大於 MaxFileSize 代表要繼續做遞迴
+				subHeader->Allocate(freeMap, MaxFileSize1);
+				fileSize -= MaxFileSize1;
+			}
+			else
+			{
+				subHeader->Allocate(freeMap, fileSize);
+				fileSize -= fileSize;
+			}
+			// 紀錄這個 header 紀錄了幾個 sector 
+			numSectors = i;
+			subHeader->WriteBack(dataSectors[i]);
+			delete subHeader;
+		}
+	}
+	else if (fileSize > MaxFileSize)
+	{
+		for (int i = 0; fileSize > 0; i++)
+		{
+			// 找到一個 sector 當作 header
+			dataSectors[i] = freeMap->FindAndSet();
+			ASSERT(dataSectors[i] >= 0);
+
+			// 把這個 sector 當作 header
+			FileHeader *subHeader = new FileHeader;
+
+			// 檢查這個 filesize 還有多少
+			if (fileSize > MaxFileSize)
+			{
+				// 如果 fileSize 還大於 MaxFileSize 代表要繼續做遞迴
+				subHeader->Allocate(freeMap, MaxFileSize);
+				fileSize -= MaxFileSize;
+			}
+			else
+			{
+				// 代表剩下的 file 不會超過一個 fileHeader 可以容納的 sector
+				subHeader->Allocate(freeMap, fileSize);
+				fileSize -= fileSize;
+			}
+			// 紀錄這個 header 紀錄了幾個 sector 
+			numSectors = i;
+			subHeader->WriteBack(dataSectors[i]);
+			delete subHeader;
 		}
 	}
 	else
@@ -167,7 +243,31 @@ void FileHeader::WriteBack(int sector)
 
 int FileHeader::ByteToSector(int offset)
 {
-	return (dataSectors[offset / SectorSize]);
+	// 把 offset 對應的位置找出來
+	FileHeader *fh = new FileHeader;
+
+	if (numBytes > MaxFileSize2)
+	{
+		int sector = divRoundDown(offset, MaxFileSize2);
+		fh->FetchFrom(dataSectors[sector]);
+		return fh->ByteToSector(offset-(sector*MaxFileSize2));
+	}
+	else if (numBytes > MaxFileSize1)
+	{
+		int sector = divRoundDown(offset, MaxFileSize1);
+		fh->FetchFrom(dataSectors[sector]);
+		return fh->ByteToSector(offset-(sector*MaxFileSize1));
+	}
+	else if (numBytes > MaxFileSize)
+	{
+		int sector = divRoundDown(offset, MaxFileSize);
+		fh->FetchFrom(dataSectors[sector]);
+		return fh->ByteToSector(offset-(sector*MaxFileSize));
+	}
+	else
+	{
+		return (dataSectors[offset / SectorSize]);
+	}
 }
 
 //----------------------------------------------------------------------
