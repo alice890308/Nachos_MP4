@@ -66,15 +66,18 @@ FileHeader::~FileHeader()
 //	"fileSize" is the bit map of free disk sectors
 //----------------------------------------------------------------------
 
+
 bool FileHeader::Allocate(PersistentBitmap *freeMap, int fileSize)
 {
 	numBytes = fileSize;
 	numSectors = divRoundUp(fileSize, SectorSize);
+
 	if (freeMap->NumClear() < numSectors)
 		return FALSE; // not enough space
 
 	for (int i = 0; i < numSectors; i++)
 	{
+		// 把 disk 現在空的 sector 位置回傳給這個 file header 的 table 紀錄下來
 		dataSectors[i] = freeMap->FindAndSet();
 		// since we checked that there was enough free space,
 		// we expect this to succeed

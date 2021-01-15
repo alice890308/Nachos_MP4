@@ -88,7 +88,7 @@ public:
 	// MP4 mod tag
 	~FileSystem();
 
-	bool Create(char *name, int initialSize);
+	int Create(char *name, int initialSize);
 	// Create a file (UNIX creat)
 
 	OpenFile *Open(char *name); // Open a file (UNIX open)
@@ -98,6 +98,8 @@ public:
 	void List(); // List all the files in the file system
 
 	void Print(); // List all the files and their contents
+
+	OpenFile *curFile; // 現在打開的file，因為題目說一次只會有一個file被open，所以用一個變數存就好了
 
 private:
 	OpenFile *freeMapFile;	 // Bit map of free disk blocks,

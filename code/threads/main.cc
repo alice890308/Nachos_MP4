@@ -1,6 +1,6 @@
-// main.cc
-//	Driver code to initialize, selftest, and run the
-//	operating system kernel.
+// main.cc 
+//	Driver code to initialize, selftest, and run the 
+//	operating system kernel.  
 //
 // Usage: nachos -d <debugflags> -rs <random seed #>
 //              -s -x <nachos file> -ci <consoleIn> -co <consoleOut>
@@ -28,13 +28,13 @@
 //    -p prints a Nachos file to stdout
 //    -r removes a Nachos file from the file system
 //    -l lists the contents of the Nachos directory
-//    -D prints the contents of the entire file system
+//    -D prints the contents of the entire file system 
 //
 //  Note: the file system flags are not used if the stub filesystem
 //        is being used
 //
 // Copyright (c) 1992-1996 The Regents of the University of California.
-// All rights reserved.  See copyright.h for copyright notice and limitation
+// All rights reserved.  See copyright.h for copyright notice and limitation 
 // of liability and disclaimer of warranty provisions.
 
 #define MAIN
@@ -50,16 +50,17 @@
 Kernel *kernel;
 Debug *debug;
 
+
 //----------------------------------------------------------------------
 // Cleanup
 //	Delete kernel data structures; called when user hits "ctl-C".
 //----------------------------------------------------------------------
 
-static void
-Cleanup(int x)
-{
+static void 
+Cleanup(int x) 
+{     
     cerr << "\nCleaning up after signal " << x << "\n";
-    delete kernel;
+    delete kernel; 
 }
 
 //-------------------------------------------------------------------
@@ -69,22 +70,23 @@ Cleanup(int x)
 //-------------------------------------------------------------------
 static const int TransferSize = 128;
 
+
 #ifndef FILESYS_STUB
 //----------------------------------------------------------------------
 // Copy
 //      Copy the contents of the UNIX file "from" to the Nachos file "to"
 //----------------------------------------------------------------------
 
-static void Copy(char *from, char *to)
+static void
+Copy(char *from, char *to)
 {
     int fd;
-    OpenFile *openFile;
+    OpenFile* openFile;
     int amountRead, fileLength;
     char *buffer;
 
-    // Open UNIX file
-    if ((fd = OpenForReadWrite(from, FALSE)) < 0)
-    {
+// Open UNIX file
+    if ((fd = OpenForReadWrite(from,FALSE)) < 0) {       
         printf("Copy: couldn't open input file %s\n", from);
         return;
     }
@@ -94,25 +96,24 @@ static void Copy(char *from, char *to)
     fileLength = Tell(fd);
     Lseek(fd, 0, 0);
 
-    // Create a Nachos file of the same length
-    DEBUG('f', "Copying file " << from << " of size " << fileLength << " to file " << to);
-    if (!kernel->fileSystem->Create(to, fileLength))
-    { // Create Nachos file
+// Create a Nachos file of the same length
+    DEBUG('f', "Copying file " << from << " of size " << fileLength <<  " to file " << to);
+    if (!kernel->fileSystem->Create(to, fileLength)) {   // Create Nachos file
         printf("Copy: couldn't create output file %s\n", to);
         Close(fd);
         return;
     }
-
+    
     openFile = kernel->fileSystem->Open(to);
     ASSERT(openFile != NULL);
-
-    // Copy the data in TransferSize chunks
+    
+// Copy the data in TransferSize chunks
     buffer = new char[TransferSize];
-    while ((amountRead = ReadPartial(fd, buffer, sizeof(char) * TransferSize)) > 0)
-        openFile->Write(buffer, amountRead);
-    delete[] buffer;
+    while ((amountRead=ReadPartial(fd, buffer, sizeof(char)*TransferSize)) > 0)
+        openFile->Write(buffer, amountRead);    
+    delete [] buffer;
 
-    // Close the UNIX and the Nachos files
+// Close the UNIX and the Nachos files
     delete openFile;
     Close(fd);
 }

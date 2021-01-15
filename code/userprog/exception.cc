@@ -53,12 +53,88 @@ void ExceptionHandler(ExceptionType which)
 	int type = kernel->machine->ReadRegister(2);
 	int val;
 	int status, exit, threadID, programID;
+	int numChar, fileID, size;
 	DEBUG(dbgSys, "Received Exception " << which << " type: " << type << "\n");
 	switch (which)
 	{
 	case SyscallException:
 		switch (type)
 		{
+		case SC_Close:
+			val = kernel->machine->ReadRegister(4);
+			{
+				status = SysClose(val);
+
+				kernel->machine->WriteRegister(2, (int)status);
+			}
+			kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+			kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+			kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
+			return;
+			ASSERTNOTREACHED();
+			break;
+		case SC_Read:
+			val = kernel->machine->ReadRegister(4);
+			numChar = kernel->machine->ReadRegister(5);
+			fileID = kernel->machine->ReadRegister(6);
+			{
+				char *buffer = &(kernel->machine->mainMemory[val]);
+				int status = SysRead(buffer, numChar, fileID);
+
+				kernel->machine->WriteRegister(2, (int)status);
+			}
+			kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+			kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+			kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
+			return;
+			ASSERTNOTREACHED();
+			break;
+		case SC_Write:
+			val = kernel->machine->ReadRegister(4);
+			numChar = kernel->machine->ReadRegister(5);
+			fileID = kernel->machine->ReadRegister(6);
+			{
+				char *buffer = &(kernel->machine->mainMemory[val]);
+				int status = SysWrite(buffer, numChar, fileID);
+
+				kernel->machine->WriteRegister(2, (int)status);
+			}
+			kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+			kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+			kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
+			return;
+			ASSERTNOTREACHED();
+			break;
+		// in exception.cc > ExceptionHandler()
+		case SC_Open:
+			val = kernel->machine->ReadRegister(4);
+			{
+				char *filename = &(kernel->machine->mainMemory[val]);
+				status = SysOpen(filename);
+
+				kernel->machine->WriteRegister(2, (int)status);
+			}
+			kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+			kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+			kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
+			return;
+			ASSERTNOTREACHED();
+			break;
+		case SC_Create:
+			val = kernel->machine->ReadRegister(4);
+			size = kernel->machine->ReadRegister(5);
+			{
+				char *filename = &(kernel->machine->mainMemory[val]);
+				//cout << filename << endl;
+				status = SysCreate(filename, size);
+				kernel->machine->WriteRegister(2, (int)status);
+			}
+			kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+			kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+			kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
+			return;
+			ASSERTNOTREACHED();
+			break;
 		case SC_Halt:
 			DEBUG(dbgSys, "Shutdown, initiated by user program.\n");
 			SysHalt();
@@ -75,7 +151,7 @@ void ExceptionHandler(ExceptionType which)
 			SysHalt();
 			ASSERTNOTREACHED();
 			break;
-		// MP4 mod tag
+			// MP4 mod tag
 #ifdef FILESYS_STUB
 		case SC_Create:
 			val = kernel->machine->ReadRegister(4);
@@ -97,7 +173,7 @@ void ExceptionHandler(ExceptionType which)
 			/* Process SysAdd Systemcall*/
 			int result;
 			result = SysAdd(/* int op1 */ (int)kernel->machine->ReadRegister(4),
-							/* int op2 */ (int)kernel->machine->ReadRegister(5));
+											/* int op2 */ (int)kernel->machine->ReadRegister(5));
 			DEBUG(dbgSys, "Add returning with " << result << "\n");
 			/* Prepare Result */
 			kernel->machine->WriteRegister(2, (int)result);

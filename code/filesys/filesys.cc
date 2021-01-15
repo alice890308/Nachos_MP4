@@ -61,8 +61,12 @@
 // Initial file sizes for the bitmap and directory; until the file system
 // supports extensible files, the directory size sets the maximum number
 // of files that can be loaded onto the disk.
+
+// bit 變成 byte
 #define FreeMapFileSize (NumSectors / BitsInByte)
+// file 最多只能放 10 個
 #define NumDirEntries 10
+// 所有 file entry 的資料
 #define DirectoryFileSize (sizeof(DirectoryEntry) * NumDirEntries)
 
 //----------------------------------------------------------------------
@@ -98,6 +102,7 @@ FileSystem::FileSystem(bool format)
         // Second, allocate space for the data blocks containing the contents
         // of the directory and bitmap files.  There better be enough space!
 
+        // allocate 空間給 directory 跟 bitmap 的 file
         ASSERT(mapHdr->Allocate(freeMap, FreeMapFileSize));
         ASSERT(dirHdr->Allocate(freeMap, DirectoryFileSize));
 
@@ -185,37 +190,44 @@ FileSystem::~FileSystem()
 //	"initialSize" -- size of file to be created
 //----------------------------------------------------------------------
 
-bool FileSystem::Create(char *name, int initialSize)
+int FileSystem::Create(char *name, int initialSize)
 {
     Directory *directory;
     PersistentBitmap *freeMap;
     FileHeader *hdr;
     int sector;
-    bool success;
+    int success;
 
     DEBUG(dbgFile, "Creating file " << name << " size " << initialSize);
 
     directory = new Directory(NumDirEntries);
     directory->FetchFrom(directoryFile);
 
-    if (directory->Find(name) != -1)
-        success = FALSE; // file is already in directory
+    if (directory->Find(name) != -1) {
+        success = 0; // file is already in directory
+    }
     else
     {
         freeMap = new PersistentBitmap(freeMapFile, NumSectors);
         sector = freeMap->FindAndSet(); // find a sector to hold the file header
-        if (sector == -1)
-            success = FALSE; // no free block for file header
-        else if (!directory->Add(name, sector))
-            success = FALSE; // no space in directory
+        if (sector == -1) {
+            success = 0; // no free block for file header
+        }
+            
+        else if (!directory->Add(name, sector)) {
+            success = 0; // no space in directory
+        }
+            
         else
         {
             hdr = new FileHeader;
-            if (!hdr->Allocate(freeMap, initialSize))
-                success = FALSE; // no space on disk for data
+            if (!hdr->Allocate(freeMap, initialSize)) {
+                success = 0; // no space on disk for data
+            }
+                
             else
             {
-                success = TRUE;
+                success = 1;
                 // everthing worked, flush all changes back to disk
                 hdr->WriteBack(sector);
                 directory->WriteBack(directoryFile);
@@ -251,6 +263,7 @@ OpenFile * FileSystem::Open(char *name)
     if (sector >= 0)
         openFile = new OpenFile(sector); // name was found in directory
     delete directory;
+    curFile = openFile;
     return openFile; // return NULL if not found
 }
 

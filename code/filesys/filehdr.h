@@ -18,7 +18,11 @@
 #include "pbitmap.h"
 
 #define NumDirect ((SectorSize - 2 * sizeof(int)) / sizeof(int))
-#define MaxFileSize (NumDirect * SectorSize)
+#define MaxFileSize (NumDirect * SectorSize) // level 0 (30 * 128)
+
+// 定義好個別的 filesize 知道這個 file 需要幾層 fileheader
+#define MaxFileSize1 (MaxFileSize * NumDirect) // level 1 (30 * 30 * 128)
+#define MaxFileSize2 (MaxFileSize * NumDirect * NumDirect) // level 2 (30 * 30 * 30 * 128)
 
 // The following class defines the Nachos "file header" (in UNIX terms,
 // the "i-node"), describing where on disk to find all of the data in the file.
