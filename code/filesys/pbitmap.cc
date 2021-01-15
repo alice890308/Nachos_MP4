@@ -40,7 +40,6 @@ PersistentBitmap::PersistentBitmap(OpenFile *file, int numItems) : Bitmap(numIte
     // map has already been initialized by the BitMap constructor,
     // but we will just overwrite that with the contents of the
     // map found in the file
-    //讀取freeMapFile裡面還有哪些空的位置，然後寫進map (Bitmap) 中
     file->ReadAt((char *)map, numWords * sizeof(unsigned), 0);
 }
 

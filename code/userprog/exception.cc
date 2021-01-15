@@ -53,94 +53,12 @@ void ExceptionHandler(ExceptionType which)
 	int type = kernel->machine->ReadRegister(2);
 	int val;
 	int status, exit, threadID, programID;
-	int numChar, fileID;
 	DEBUG(dbgSys, "Received Exception " << which << " type: " << type << "\n");
 	switch (which)
 	{
 	case SyscallException:
 		switch (type)
 		{
-		case SC_Close:
-			val = kernel->machine->ReadRegister(4);
-			{
-				//cout << filename << endl;
-				status = SysClose(val);
-
-				kernel->machine->WriteRegister(2, (int)status);
-			}
-			kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
-			kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
-			kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
-			return;
-			ASSERTNOTREACHED();
-			break;
-		case SC_Read:
-			val = kernel->machine->ReadRegister(4);
-			numChar = kernel->machine->ReadRegister(5);
-			fileID = kernel->machine->ReadRegister(6);
-			{
-				char *buffer = &(kernel->machine->mainMemory[val]);
-
-				//cout << filename << endl;
-				int status = SysRead(buffer, numChar, fileID);
-
-				kernel->machine->WriteRegister(2, (int)status);
-			}
-			kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
-			kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
-			kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
-			return;
-			ASSERTNOTREACHED();
-			break;
-		case SC_Write:
-			val = kernel->machine->ReadRegister(4);
-			numChar = kernel->machine->ReadRegister(5);
-			fileID = kernel->machine->ReadRegister(6);
-			{
-				char *buffer = &(kernel->machine->mainMemory[val]);
-
-				//cout << "exception handler sc write id = "<< id << '\n';
-				int status = SysWrite(buffer, numChar, fileID);
-
-				kernel->machine->WriteRegister(2, (int)status);
-			}
-			kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
-			kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
-			kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
-			return;
-			ASSERTNOTREACHED();
-			break;
-		// in exception.cc > ExceptionHandler()
-		case SC_Open:
-			val = kernel->machine->ReadRegister(4);
-			{
-				char *filename = &(kernel->machine->mainMemory[val]);
-				//cout << filename << endl;
-				status = SysOpen(filename);
-
-				kernel->machine->WriteRegister(2, (int)status);
-			}
-			kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
-			kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
-			kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
-			return;
-			ASSERTNOTREACHED();
-			break;
-		case SC_Create:
-			val = kernel->machine->ReadRegister(4);
-			int size = kernel->machine->ReadRegister(5);
-			{
-				char *filename = &(kernel->machine->mainMemory[val]);
-				//cout << filename << endl;
-				status = SysCreate(filename, size);
-				kernel->machine->WriteRegister(2, (int)status);
-			}
-			kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
-			kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
-			kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
-			return;
-			ASSERTNOTREACHED();
-			break;
 		case SC_Halt:
 			DEBUG(dbgSys, "Shutdown, initiated by user program.\n");
 			SysHalt();
