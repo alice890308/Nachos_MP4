@@ -98,7 +98,7 @@ bool FileHeader::Allocate(PersistentBitmap *freeMap, int fileSize)
 				subHeader->Allocate(freeMap, fileSize);
 				fileSize -= fileSize;
 			}
-			// 紀錄這個 header 紀錄了幾個 sector 
+			// 紀錄這個 header 紀錄了幾個 sector
 			numSectors = i;
 			subHeader->WriteBack(dataSectors[i]);
 			delete subHeader;
@@ -127,7 +127,7 @@ bool FileHeader::Allocate(PersistentBitmap *freeMap, int fileSize)
 				subHeader->Allocate(freeMap, fileSize);
 				fileSize -= fileSize;
 			}
-			// 紀錄這個 header 紀錄了幾個 sector 
+			// 紀錄這個 header 紀錄了幾個 sector
 			numSectors = i;
 			subHeader->WriteBack(dataSectors[i]);
 			delete subHeader;
@@ -157,7 +157,7 @@ bool FileHeader::Allocate(PersistentBitmap *freeMap, int fileSize)
 				subHeader->Allocate(freeMap, fileSize);
 				fileSize -= fileSize;
 			}
-			// 紀錄這個 header 紀錄了幾個 sector 
+			// 紀錄這個 header 紀錄了幾個 sector
 			numSectors = i;
 			subHeader->WriteBack(dataSectors[i]);
 			delete subHeader;
@@ -186,11 +186,26 @@ bool FileHeader::Allocate(PersistentBitmap *freeMap, int fileSize)
 
 void FileHeader::Deallocate(PersistentBitmap *freeMap)
 {
-	for (int i = 0; i < numSectors; i++)
+	FileHeader *fh = new FileHeader;
+	if (numBytes > MaxFileSize)
 	{
-		ASSERT(freeMap->Test((int)dataSectors[i])); // ought to be marked!
-		freeMap->Clear((int)dataSectors[i]);
+		for (int i = 0; i < numSectors; i++)
+		{
+			fh->FetchFrom(dataSectors[i]);
+			fh->Deallocate(freeMap);
+			ASSERT(freeMap->Test((int)dataSectors[i]));
+			freeMap->Clear((int)dataSectors[i]);
+		}
 	}
+	else
+	{
+		for (int i = 0; i < numSectors; i++)
+		{
+			ASSERT(freeMap->Test((int)dataSectors[i])); // ought to be marked!
+			freeMap->Clear((int)dataSectors[i]);
+		}
+	}
+	delete fh;
 }
 
 //----------------------------------------------------------------------
@@ -250,24 +265,25 @@ int FileHeader::ByteToSector(int offset)
 	{
 		int sector = divRoundDown(offset, MaxFileSize2);
 		fh->FetchFrom(dataSectors[sector]);
-		return fh->ByteToSector(offset-(sector*MaxFileSize2));
+		return fh->ByteToSector(offset - (sector * MaxFileSize2));
 	}
 	else if (numBytes > MaxFileSize1)
 	{
 		int sector = divRoundDown(offset, MaxFileSize1);
 		fh->FetchFrom(dataSectors[sector]);
-		return fh->ByteToSector(offset-(sector*MaxFileSize1));
+		return fh->ByteToSector(offset - (sector * MaxFileSize1));
 	}
 	else if (numBytes > MaxFileSize)
 	{
 		int sector = divRoundDown(offset, MaxFileSize);
 		fh->FetchFrom(dataSectors[sector]);
-		return fh->ByteToSector(offset-(sector*MaxFileSize));
+		return fh->ByteToSector(offset - (sector * MaxFileSize));
 	}
 	else
 	{
 		return (dataSectors[offset / SectorSize]);
 	}
+	delete fh;
 }
 
 //----------------------------------------------------------------------
