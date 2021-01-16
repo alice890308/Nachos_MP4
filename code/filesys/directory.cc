@@ -24,6 +24,7 @@
 #include "filehdr.h"
 #include "directory.h"
 
+#define NumDirEntries 10
 //----------------------------------------------------------------------
 // Directory::Directory
 // 	Initialize a directory; initially, the directory is completely
@@ -182,6 +183,29 @@ void Directory::List()
             }
         }
     }      
+}
+
+void Directory::RecursiveList(int padding)
+{
+    Directory *subDir = new Directory(NumDirEntries);
+    OpenFile *openFile;
+
+    for(int i = 0; i < tableSize; i++) {
+        if (table[i].inUse) {
+            for(int i = 0; i < padding; i++) {
+                printf("    ");
+            }
+            if (table[i].isDir == 1) {
+                printf("[D] %s\n", table[i].name);
+                openFile = new OpenFile(table[i].sector);
+                subDir->FetchFrom(openFile);
+                subDir->RecursiveList(padding+1);
+            }
+            else if (table[i].isDir == 0) {
+                printf("[F] %s\n", table[i].name);
+            }
+        }
+    }
 }
 
 //----------------------------------------------------------------------

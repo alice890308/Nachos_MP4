@@ -339,9 +339,15 @@ int main(int argc, char **argv)
     {
         kernel->fileSystem->Print();
     }
-    if (dirListFlag)
+    if (dirListFlag && recursiveListFlag)
     {
-        kernel->fileSystem->List(listDirectoryName);
+        // recursively list
+        kernel->fileSystem->List(listDirectoryName, true);
+    }
+    else if (dirListFlag)
+    {
+        // list
+        kernel->fileSystem->List(listDirectoryName, false);
     }
     if (mkdirFlag)
     {

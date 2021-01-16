@@ -70,6 +70,8 @@ public:
 
     bool Remove(char *name); // Remove a file from the directory
 
+    void RecursiveList(int padding);
+
     void List();  // Print the names of all the files
                   //  in the directory
     void Print(); // Verbose print of the contents
