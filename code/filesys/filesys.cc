@@ -194,88 +194,103 @@ int FileSystem::Create(char *name, int initialSize)
 {
     Directory *directory;
     PersistentBitmap *freeMap;
+    OpenFile *dirFile = directoryFile;
     FileHeader *hdr;
-    int sector;
-    int success;
+    pair<int, int> temp;
+    int sector, isDir;
+    char *fileName;
 
     DEBUG(dbgFile, "Creating file " << name << " size " << initialSize);
+    DEBUG(rain, "Creating file " << name << " size " << initialSize);
 
     directory = new Directory(NumDirEntries);
     directory->FetchFrom(directoryFile);
 
-    if (directory->Find(name) != -1) {
-        success = 0; // file is already in directory
+    fileName = strtok(name, "/");
+    while(fileName != NULL) {
+        temp = directory->Find(fileName);
+        sector = temp.first;
+        isDir = temp.second;
+        if (sector != -1 && isDir == 1) { // 這層dir存在，要繼續往下走
+            DEBUG(rain, "directory " << fileName <<  " exist, keep going");
+            dirFile = new OpenFile(sector);
+            directory->FetchFrom(dirFile);
+        }
+        else { // 這層dir不存在，所以就是要create的file
+            ASSERT (isDir != 0); // 這個檔案若已經存在，則會assertion fail
+            DEBUG(rain, "sector =  " << sector << " is dir? = " << isDir);
+            DEBUG(rain, "file " << fileName << " not exist, create! ");
+            break;
+        }
+        fileName = strtok(NULL, "/");
     }
-    else
-    {
-        freeMap = new PersistentBitmap(freeMapFile, NumSectors);
-        sector = freeMap->FindAndSet(); // find a sector to hold the file header
-        if (sector == -1) {
-            success = 0; // no free block for file header
-        }
-            
-        else if (!directory->Add(name, sector, false)) {
-            success = 0; // no space in directory
-        }
-            
-        else
-        {
-            hdr = new FileHeader;
-            if (!hdr->Allocate(freeMap, initialSize)) {
-                success = 0; // no space on disk for data
-            }
-                
-            else
-            {
-                success = 1;
-                // everthing worked, flush all changes back to disk
-                hdr->WriteBack(sector);
-                directory->WriteBack(directoryFile);
-                freeMap->WriteBack(freeMapFile);
-            }
-            delete hdr;
-        }
-        delete freeMap;
-    }
+    freeMap = new PersistentBitmap(freeMapFile, NumSectors);
+    sector = freeMap->FindAndSet(); // find a sector to hold the file header
+    ASSERT(sector >= 0);
+    ASSERT(directory->Add(fileName, sector, false));
+    hdr = new FileHeader;
+    ASSERT(hdr->Allocate(freeMap, initialSize));
+    
+    // everthing worked, flush all changes back to disk
+    hdr->WriteBack(sector);
+    directory->WriteBack(dirFile); // directoryFile是root directory，dirFil才是這一層的directory
+    freeMap->WriteBack(freeMapFile);
+    delete hdr;
+    delete freeMap;
     delete directory;
-    return success;
+    DEBUG(rain, "create file success");
+    return 1;
 }
 
 void FileSystem::CreateDirectory(char *name)
 {
     Directory *directory;
     PersistentBitmap *freeMap;
-    OpenFile *dirFile;
+    OpenFile *dirFile = directoryFile;
     FileHeader *newDirHdr = new FileHeader;
+    pair<int, int> temp;
     int sector;
     char *dirname;
 
     directory = new Directory(NumDirEntries);
     directory->FetchFrom(directoryFile);
+    DEBUG(rain, "Creating directory " << name);
 
     dirname = strtok(name, "/");
     while(dirname != NULL) {
-        sector = directory->Find(dirname);
+        //DEBUG(rain, "dirname = " << dirname);
+        temp = directory->Find(dirname);
+        sector = temp.first;
         if (sector != -1) { // 這層dir存在，要繼續往下走
+            DEBUG(rain, "directory " << dirname <<  " exist, keep going!");
             dirFile = new OpenFile(sector);
             directory->FetchFrom(dirFile);
         }
         else { // 這層dir不存在，所以就是要create的dir
+            DEBUG(rain, "directory " << dirname << "not exist, create!");
             break;
         }
         dirname = strtok(NULL, "/");
     }
     freeMap = new PersistentBitmap(freeMapFile, NumSectors);
     sector = freeMap->FindAndSet(); // find a sector to hold the dir header
+    //DEBUG(rain, "find a sector to hold dir header, sector: " << sector);
     ASSERT(sector >= 0);
     ASSERT(directory->Add(dirname, sector, true)); // 把新的dir加到現在的directory底下
     ASSERT(newDirHdr->Allocate(freeMap, DirectoryFileSize)); //幫新的dir（data的部分) allocate空間
     newDirHdr->WriteBack(sector); // 把新的sub dir header寫回disk
+    //DEBUG(rain, "write back sub dir header to disk");
     OpenFile *newDirFile = new OpenFile(sector); // 打開新的sub dir的檔案
+    //DEBUG(rain, "open sub dir file");
     Directory *newDir = new Directory(NumDirEntries); //爲sub dir創建新的directory structure
+    //DEBUG(rain, "create new directory structure for sub dir");
     newDir->WriteBack(newDirFile); // 把這個新的directory structure寫進sub dir的檔案中
+    //DEBUG(rain, "write back new directory structure to sub dir file");
     directory->WriteBack(dirFile); // 更新舊的（上一層）dir的結構
+    //DEBUG(rain, "update old directory");
     freeMap->WriteBack(freeMapFile); // 更新free map
+    //DEBUG(rain, "update free map");
+    DEBUG(rain, "create directory success");
 
     //把過程中產生的變數刪掉
     delete newDirHdr;
@@ -299,15 +314,37 @@ OpenFile * FileSystem::Open(char *name)
 {
     Directory *directory = new Directory(NumDirEntries);
     OpenFile *openFile = NULL;
-    int sector;
+    pair<int, int> temp;
+    int sector, isDir;
+    char *fileName;
 
     DEBUG(dbgFile, "Opening file" << name);
+    DEBUG(rain, "Opening file " << name);
     directory->FetchFrom(directoryFile);
-    sector = directory->Find(name);
-    if (sector >= 0)
-        openFile = new OpenFile(sector); // name was found in directory
+
+    fileName = strtok(name, "/");
+    while(fileName != NULL) {
+        //DEBUG(rain, "fileName = " << fileName);
+        temp = directory->Find(fileName);
+        sector = temp.first;
+        isDir = temp.second;
+        ASSERT(sector != -1);
+        if (isDir) { // 這層dir存在，要繼續往下走
+            DEBUG(rain, "directory " << fileName << " exist, keepgoing!");
+            openFile = new OpenFile(sector);
+            directory->FetchFrom(openFile);
+        }
+        else {
+            DEBUG(rain, "find target file: " << fileName << " ,start opening!");
+            break;
+        }
+        fileName = strtok(NULL, "/");
+    }
+
+    openFile = new OpenFile(sector); // name was found in directory
+    DEBUG(rain, "open success");
     delete directory;
-    curFile = openFile;
+
     return openFile; // return NULL if not found
 }
 
@@ -330,11 +367,13 @@ bool FileSystem::Remove(char *name)
     Directory *directory;
     PersistentBitmap *freeMap;
     FileHeader *fileHdr;
+    pair<int, int> temp;
     int sector;
 
     directory = new Directory(NumDirEntries);
     directory->FetchFrom(directoryFile);
-    sector = directory->Find(name);
+    temp = directory->Find(name);
+    sector = temp.first;
     if (sector == -1)
     {
         delete directory;

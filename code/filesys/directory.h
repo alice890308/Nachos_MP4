@@ -34,7 +34,7 @@ class DirectoryEntry
 {
 public:
     bool inUse;                    // Is this directory entry in use?
-    bool isDir;                    // 確認這個entry存的是不是directory
+    int isDir;                    // 確認這個entry存的是不是directory, -1: not in use, 0: file, 1: dir
     int sector;                    // Location on disk to find the
                                    //   FileHeader for this file
     char name[FileNameMaxLen + 1]; // Text name for file, with +1 for
@@ -62,8 +62,9 @@ public:
     void WriteBack(OpenFile *file); // Write modifications to
                                     // directory contents back to disk
 
-    int Find(char *name); // Find the sector number of the
+    pair<int, int> Find(char *name); // Find the sector number of the
                           // FileHeader for file: "name"
+                          // return value: <sector number, isDir>
 
     bool Add(char *name, int newSector, bool isDir); // Add a file name into the directory
 

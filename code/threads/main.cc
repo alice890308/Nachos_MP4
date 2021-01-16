@@ -84,6 +84,7 @@ Copy(char *from, char *to)
     OpenFile* openFile;
     int amountRead, fileLength;
     char *buffer;
+    char *temp = new char [100];
 
 // Open UNIX file
     if ((fd = OpenForReadWrite(from,FALSE)) < 0) {       
@@ -98,12 +99,13 @@ Copy(char *from, char *to)
 
 // Create a Nachos file of the same length
     DEBUG('f', "Copying file " << from << " of size " << fileLength <<  " to file " << to);
+    strcpy(temp, to); // 如果不複製的話，to會在fileSystem->Create()中被修改，之後就沒辦法用正確的路徑來open file
     if (!kernel->fileSystem->Create(to, fileLength)) {   // Create Nachos file
         printf("Copy: couldn't create output file %s\n", to);
         Close(fd);
         return;
     }
-    
+    strcpy(to, temp);
     openFile = kernel->fileSystem->Open(to);
     ASSERT(openFile != NULL);
     

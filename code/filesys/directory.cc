@@ -42,8 +42,10 @@ Directory::Directory(int size)
     memset(table, 0, sizeof(DirectoryEntry) * size); // dummy operation to keep valgrind happy
 
     tableSize = size;
-    for (int i = 0; i < tableSize; i++)
+    for (int i = 0; i < tableSize; i++){
         table[i].inUse = FALSE;
+        table[i].isDir = -1;
+    }
 }
 
 //----------------------------------------------------------------------
@@ -107,13 +109,13 @@ int Directory::FindIndex(char *name)
 //	"name" -- the file name to look up
 //----------------------------------------------------------------------
 
-int Directory::Find(char *name)
+pair<int, int> Directory::Find(char *name)
 {
     int i = FindIndex(name);
 
     if (i != -1)
-        return table[i].sector;
-    return -1;
+        return make_pair(table[i].sector, table[i].isDir);
+    return make_pair(-1, -1);
 }
 
 //----------------------------------------------------------------------
