@@ -166,6 +166,27 @@ bool Directory::Remove(char *name)
     return TRUE;
 }
 
+void Directory::RecursiveRemove(PersistentBitmap *freeMap)
+{
+    FileHeader *fileHdr = new FileHeader;
+    Directory *subDir = new Directory(NumDirEntries);
+    OpenFile *openFile;
+
+    for(int i = 0; i < tableSize; i++) {
+        if (table[i].inUse) {
+            if (table[i].isDir == 1) {
+                openFile = new OpenFile(table[i].sector);
+                subDir->FetchFrom(openFile);
+                subDir->RecursiveRemove(freeMap); // 刪掉sub directory中的資料
+                delete subDir;
+            }
+            fileHdr->FetchFrom(table[i].sector);
+            fileHdr->Deallocate(freeMap); // remove data blocks
+            freeMap->Clear(table[i].sector); // remove header block
+        }
+    }
+}
+
 //----------------------------------------------------------------------
 // Directory::List
 // 	List all the file names in the directory.

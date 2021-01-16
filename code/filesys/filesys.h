@@ -96,7 +96,7 @@ public:
 
 	OpenFile *Open(char *name); // Open a file (UNIX open)
 
-	bool Remove(char *name); // Delete a file (UNIX unlink)
+	bool Remove(char *name, bool recursive); // Delete a file (UNIX unlink)
 
 	void List(char *name, bool recursive); // List all the files in the directory
 

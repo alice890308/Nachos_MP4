@@ -68,6 +68,8 @@ public:
 
     bool Add(char *name, int newSector, bool isDir); // Add a file name into the directory
 
+    void RecursiveRemove(PersistentBitmap *freeMap);
+
     bool Remove(char *name); // Remove a file from the directory
 
     void RecursiveList(int padding);

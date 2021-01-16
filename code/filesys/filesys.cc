@@ -201,6 +201,7 @@ int FileSystem::Create(char *name, int initialSize)
     char *fileName;
 
     DEBUG(dbgFile, "Creating file " << name << " size " << initialSize);
+    DEBUG(alice, "Creating file " << name << " size " << initialSize);
 
     directory = new Directory(NumDirEntries);
     directory->FetchFrom(directoryFile);
@@ -211,11 +212,13 @@ int FileSystem::Create(char *name, int initialSize)
         sector = temp.first;
         isDir = temp.second;
         if (sector != -1 && isDir == 1) { // 這層dir存在，要繼續往下走
+            DEBUG(alice, fileName << " is dir, keep going");
             dirFile = new OpenFile(sector);
             directory->FetchFrom(dirFile);
         }
         else { // 這層dir不存在，所以就是要create的file
-            ASSERT (isDir != 0); // 這個檔案若已經存在，則會assertion fail
+            //ASSERT (isDir == -1); // 這個檔案若已經存在，則會assertion fail
+            DEBUG(alice, fileName << " is not exist, create this!");
             break;
         }
         fileName = strtok(NULL, "/");
@@ -224,13 +227,16 @@ int FileSystem::Create(char *name, int initialSize)
     sector = freeMap->FindAndSet(); // find a sector to hold the file header
     ASSERT(sector >= 0);
     ASSERT(directory->Add(fileName, sector, false));
+    DEBUG(alice, "success add to directory");
     hdr = new FileHeader;
     ASSERT(hdr->Allocate(freeMap, initialSize));
+    DEBUG(alice, "success allocate space");
     
     // everthing worked, flush all changes back to disk
     hdr->WriteBack(sector);
     directory->WriteBack(dirFile); // directoryFile是root directory，dirFil才是這一層的directory
     freeMap->WriteBack(freeMapFile);
+    DEBUG(alice, "write back finish, create file success");
     delete hdr;
     delete freeMap;
     delete directory;
@@ -302,6 +308,7 @@ OpenFile * FileSystem::Open(char *name)
     char *fileName;
 
     DEBUG(dbgFile, "Opening file" << name);
+    DEBUG(alice, "opening file: " << name);
     directory->FetchFrom(directoryFile);
 
     fileName = strtok(name, "/");
@@ -311,16 +318,20 @@ OpenFile * FileSystem::Open(char *name)
         isDir = temp.second;
         ASSERT(sector != -1);
         if (isDir) { // 這層dir存在，要繼續往下走
+            DEBUG(alice, fileName << " is dir, keep going");
             openFile = new OpenFile(sector);
             directory->FetchFrom(openFile);
         }
         else {
+            DEBUG(alice, fileName << " is file, open this one!");
             break;
         }
         fileName = strtok(NULL, "/");
     }
 
     openFile = new OpenFile(sector); // name was found in directory
+    DEBUG(alice, "success open file");
+    curFile = openFile;
     delete directory;
 
     return openFile; // return NULL if not found
@@ -340,16 +351,17 @@ OpenFile * FileSystem::Open(char *name)
 //	"name" -- the text name of the file to be removed
 //----------------------------------------------------------------------
 
-bool FileSystem::Remove(char *name)
+bool FileSystem::Remove(char *name, bool recursive)
 {
     Directory *directory;
     PersistentBitmap *freeMap;
     FileHeader *fileHdr;
-    OpenFile *openFile;
+    OpenFile *openFile, *prevFile; // prevFile紀錄前一個directory的file
     pair<int, int> temp;
     int sector, isDir;
-    char *deleteName;
+    char *deleteName, *prevName;
 
+    openFile = directoryFile;
     directory = new Directory(NumDirEntries);
     directory->FetchFrom(directoryFile);
 
@@ -358,11 +370,15 @@ bool FileSystem::Remove(char *name)
     deleteName = strtok(name, "/");
     while(deleteName != NULL) {
         temp = directory->Find(deleteName);
+        DEBUG(alice, "check here");
         sector = temp.first;
         isDir = temp.second;
         ASSERT(sector != -1);
+        DEBUG(alice, "check assertion");
         if (isDir) {
             DEBUG(alice, "in directory: " << deleteName << ", keep going!");
+            prevFile = openFile;
+            prevName = deleteName;
             openFile = new OpenFile(sector);
             directory->FetchFrom(openFile);
         }
@@ -373,17 +389,24 @@ bool FileSystem::Remove(char *name)
         deleteName = strtok(NULL, "/");
     }
 
-    fileHdr = new FileHeader;
-    fileHdr->FetchFrom(sector); // get the file header
-
     freeMap = new PersistentBitmap(freeMapFile, NumSectors);
 
+    if (recursive) {
+        directory->RecursiveRemove(freeMap);
+        directory->FetchFrom(prevFile); // 取得要被刪掉的這個資料夾的上一層的directory
+        openFile = prevFile; // 取得上一層資料夾的file
+        deleteName = prevName; // 取回要被刪掉的資料夾名稱
+    }
+    fileHdr = new FileHeader;
+    fileHdr->FetchFrom(sector); // get the file header
     fileHdr->Deallocate(freeMap); // remove data blocks
     freeMap->Clear(sector);       // remove header block
     directory->Remove(deleteName);
 
     freeMap->WriteBack(freeMapFile);     // flush to disk
+    DEBUG(alice, "writeback");
     directory->WriteBack(openFile); // flush to disk
+    
     delete fileHdr;
     delete directory;
     delete freeMap;
