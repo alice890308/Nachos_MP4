@@ -341,7 +341,7 @@ int main(int argc, char **argv)
     }
     if (dirListFlag)
     {
-        kernel->fileSystem->List();
+        kernel->fileSystem->List(listDirectoryName);
     }
     if (mkdirFlag)
     {

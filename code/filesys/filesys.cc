@@ -401,11 +401,30 @@ bool FileSystem::Remove(char *name)
 // 	List all the files in the file system directory.
 //----------------------------------------------------------------------
 
-void FileSystem::List()
+void FileSystem::List(char *name)
 {
     Directory *directory = new Directory(NumDirEntries);
-
     directory->FetchFrom(directoryFile);
+    char *dirName;
+    int sector, isDir;
+    pair<int, int> temp;
+    OpenFile *openFile = directoryFile;
+
+    DEBUG(alice, "list file in directory: " << name);
+
+    dirName = strtok(name, "/");
+    while(dirName != NULL) {
+        temp = directory->Find(dirName);
+        sector = temp.first;
+        isDir = temp.second;
+        ASSERT(sector != -1);
+        if (isDir) { // 這層dir存在，要繼續往下走
+            DEBUG(rain, "directory " << dirName << " exist, keepgoing!");
+            openFile = new OpenFile(sector);
+            directory->FetchFrom(openFile);
+        }
+        dirName = strtok(NULL, "/");
+    }
     directory->List();
     delete directory;
 }

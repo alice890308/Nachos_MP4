@@ -171,9 +171,16 @@ bool Directory::Remove(char *name)
 
 void Directory::List()
 {
-    for (int i = 0; i < tableSize; i++)
-        if (table[i].inUse)
-            printf("%s\n", table[i].name);
+    for (int i = 0; i < tableSize; i++) {
+        if (table[i].inUse) {
+            if (table[i].isDir == 1) {
+                printf("[D] %s\n", table[i].name);
+            }
+            else if (table[i].isDir == 0) {
+                printf("[F] %s\n", table[i].name);
+            }
+        }
+    }      
 }
 
 //----------------------------------------------------------------------
