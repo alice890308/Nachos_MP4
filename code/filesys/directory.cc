@@ -161,6 +161,7 @@ bool Directory::Remove(char *name)
     if (i == -1)
         return FALSE; // name not in directory
     table[i].inUse = FALSE;
+    table[i].isDir = -1;
     return TRUE;
 }
 
