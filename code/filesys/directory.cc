@@ -178,13 +178,14 @@ void Directory::RecursiveRemove(PersistentBitmap *freeMap)
                 openFile = new OpenFile(table[i].sector);
                 subDir->FetchFrom(openFile);
                 subDir->RecursiveRemove(freeMap); // 刪掉sub directory中的資料
-                delete subDir;
             }
             fileHdr->FetchFrom(table[i].sector);
             fileHdr->Deallocate(freeMap); // remove data blocks
             freeMap->Clear(table[i].sector); // remove header block
         }
     }
+    delete subDir;
+    delete fileHdr;
 }
 
 //----------------------------------------------------------------------

@@ -31,6 +31,7 @@ const char dbgNet = 'n'; 		// network emulation
 const char dbgSys = 'u';                // systemcall
 const char rain = 'r';         // Ivan
 const char alice = 'c';        // alice
+const char size = 'S';         // show file size
 
 class Debug {
   public:

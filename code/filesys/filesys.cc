@@ -403,6 +403,7 @@ bool FileSystem::Remove(char *name, bool recursive)
         openFile = prevFile; // 取得上一層資料夾的file
         deleteName = prevName; // 取回要被刪掉的資料夾名稱
     }
+
     fileHdr = new FileHeader;
     fileHdr->FetchFrom(sector); // get the file header
     fileHdr->Deallocate(freeMap); // remove data blocks
