@@ -359,6 +359,7 @@ bool FileSystem::Remove(char *name, bool recursive)
     OpenFile *openFile, *prevFile; // prevFile紀錄前一個directory的file
     pair<int, int> temp;
     int sector, isDir;
+    int isFile = 0; // -rr 可能也要刪掉 file
     char *deleteName, *prevName;
 
     openFile = directoryFile;
@@ -384,6 +385,9 @@ bool FileSystem::Remove(char *name, bool recursive)
         }
         else {
             DEBUG(alice, "find target file: " << deleteName << ", start delete!");
+            prevFile = openFile;
+            prevName = deleteName;
+            isFile = 1;
             break;
         }
         deleteName = strtok(NULL, "/");
@@ -392,7 +396,9 @@ bool FileSystem::Remove(char *name, bool recursive)
     freeMap = new PersistentBitmap(freeMapFile, NumSectors);
 
     if (recursive) {
-        directory->RecursiveRemove(freeMap);
+        if (!isFile) {
+            directory->RecursiveRemove(freeMap);
+        }
         directory->FetchFrom(prevFile); // 取得要被刪掉的這個資料夾的上一層的directory
         openFile = prevFile; // 取得上一層資料夾的file
         deleteName = prevName; // 取回要被刪掉的資料夾名稱
