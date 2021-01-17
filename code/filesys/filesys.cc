@@ -198,6 +198,8 @@ int FileSystem::Create(char *name, int initialSize)
     FileHeader *hdr;
     pair<int, int> temp;
     int sector, isDir;
+    int fileHeaderSize;
+    int totalsize;
     char *fileName;
 
     DEBUG(dbgFile, "Creating file " << name << " size " << initialSize);
@@ -231,6 +233,11 @@ int FileSystem::Create(char *name, int initialSize)
     hdr = new FileHeader;
     ASSERT(hdr->Allocate(freeMap, initialSize));
     DEBUG(alice, "success allocate space");
+
+    // if we want to know this file header size
+    fileHeaderSize = hdr->FileHeaderSize() + 1;
+    totalsize = fileHeaderSize * 128;
+    DEBUG(size, "file size = " << initialSize << "   file header number = " << fileHeaderSize << "   total file header size = " << totalsize << " KB");
     
     // everthing worked, flush all changes back to disk
     hdr->WriteBack(sector);

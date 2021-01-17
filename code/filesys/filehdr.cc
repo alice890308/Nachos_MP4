@@ -99,7 +99,7 @@ bool FileHeader::Allocate(PersistentBitmap *freeMap, int fileSize)
 				fileSize -= fileSize;
 			}
 			// 紀錄這個 header 紀錄了幾個 sector
-			numSectors = i;
+			numSectors = i+1;
 			subHeader->WriteBack(dataSectors[i]);
 			delete subHeader;
 		}
@@ -128,7 +128,7 @@ bool FileHeader::Allocate(PersistentBitmap *freeMap, int fileSize)
 				fileSize -= fileSize;
 			}
 			// 紀錄這個 header 紀錄了幾個 sector
-			numSectors = i;
+			numSectors = i+1;
 			subHeader->WriteBack(dataSectors[i]);
 			delete subHeader;
 		}
@@ -158,7 +158,7 @@ bool FileHeader::Allocate(PersistentBitmap *freeMap, int fileSize)
 				fileSize -= fileSize;
 			}
 			// 紀錄這個 header 紀錄了幾個 sector
-			numSectors = i;
+			numSectors = i+1;
 			subHeader->WriteBack(dataSectors[i]);
 			delete subHeader;
 		}
@@ -282,6 +282,26 @@ int FileHeader::ByteToSector(int offset)
 	else
 	{
 		return (dataSectors[offset / SectorSize]);
+	}
+	delete fh;
+}
+
+int FileHeader::FileHeaderSize()
+{
+	FileHeader *fh = new FileHeader;
+	int num = 0;
+	if (numBytes > MaxFileSize)
+	{
+		for (int i = 0; i < numSectors; i++)
+		{
+			fh->FetchFrom(dataSectors[i]);
+			num += fh->FileHeaderSize();
+		}
+		return num + numSectors;
+	}
+	else
+	{
+		return 0;
 	}
 	delete fh;
 }

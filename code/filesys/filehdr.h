@@ -63,6 +63,8 @@ public:
 	int FileLength(); // Return the length of the file
 					  // in bytes
 
+	int FileHeaderSize();
+
 	void Print(); // Print the contents of the file.
 
 private:
